@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
@@ -60,34 +61,33 @@ consumeLoop:
 
 			break consumeLoop
 		default:
-			// consumes messages from the subscribed topic and prints them to the console
-			e := sdc.Consumer.Poll(1000)
-			switch ev := e.(type) {
-			case *kafka.Message:
-				fmt.Printf("Consumed event from topic %s: key = %-10s value = %s\n\n",
-					*ev.TopicPartition.Topic, string(ev.Key), "see below")
-
-				newFootBallMatch := new(sports.FootballMatch)
-
-				if err := json.Unmarshal(ev.Value, newFootBallMatch); err != nil {
-					log.Fatalln(err)
+			msg, err := sdc.Consumer.ReadMessage(1000 * time.Millisecond)
+			if err != nil {
+				if err.Error() == kafka.ErrTimedOut.String() {
+					continue
 				}
 
-				fmt.Printf("FootballMatch ID: %s\n", newFootBallMatch.ID)
-				fmt.Printf("Home Team: %s\n", newFootBallMatch.HomeTeam.Name)
-				fmt.Printf("Away Team: %s\n", newFootBallMatch.AwayTeam.Name)
-				fmt.Printf("Stadium: %s\n", newFootBallMatch.Stadium)
-				fmt.Printf("Round: %d\n", newFootBallMatch.Round)
-				fmt.Printf("Competition: %s\n", newFootBallMatch.Competition)
-				fmt.Printf("Country: %s\n", newFootBallMatch.Country)
-				fmt.Printf("Kick Off: %s\n", newFootBallMatch.KickOff)
-				fmt.Println()
-
-			case kafka.Error:
-				sdc.Log.Error("Error polling for message: " + ev.Error())
-
-				break consumeLoop
+				sdc.Log.Error("Error reading message: " + err.Error())
 			}
+
+			fmt.Printf("Consumed event from topic %s: key = %-10s value = %s\n\n",
+				*msg.TopicPartition.Topic, string(msg.Key), "see below")
+
+			newFootBallMatch := new(sports.FootballMatch)
+
+			if err := json.Unmarshal(msg.Value, newFootBallMatch); err != nil {
+				log.Fatalln(err)
+			}
+
+			fmt.Printf("FootballMatch ID: %s\n", newFootBallMatch.ID)
+			fmt.Printf("Home Team: %s\n", newFootBallMatch.HomeTeam.Name)
+			fmt.Printf("Away Team: %s\n", newFootBallMatch.AwayTeam.Name)
+			fmt.Printf("Stadium: %s\n", newFootBallMatch.Stadium)
+			fmt.Printf("Round: %d\n", newFootBallMatch.Round)
+			fmt.Printf("Competition: %s\n", newFootBallMatch.Competition)
+			fmt.Printf("Country: %s\n", newFootBallMatch.Country)
+			fmt.Printf("Kick Off: %s\n", newFootBallMatch.KickOff)
+			fmt.Println()
 		}
 	}
 }
