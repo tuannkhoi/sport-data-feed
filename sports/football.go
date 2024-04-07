@@ -36,6 +36,10 @@ func NewMatch() *Match {
 	homeTeam := getRandomElement(teams)
 	awayTeam := getRandomElement(teams)
 
+	for awayTeam.ID == homeTeam.ID {
+		awayTeam = getRandomElement(teams)
+	}
+
 	return &Match{
 		ID:           uuid.New(),
 		HomeTeamID:   homeTeam.ID,
