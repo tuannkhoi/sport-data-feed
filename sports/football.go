@@ -9,17 +9,15 @@ import (
 	"syreclabs.com/go/faker"
 )
 
-type Match struct {
-	ID           uuid.UUID `json:"id"`
-	HomeTeamID   uuid.UUID `json:"home_team_id"`
-	AwayTeamID   uuid.UUID `json:"away_team_id"`
-	HomeTeamName string    `json:"home_team_name"`
-	AwayTeamName string    `json:"away_team_name"`
-	Stadium      string    `json:"stadium"`
-	Round        int       `json:"round"`
-	Competition  string    `json:"competition"`
-	Country      string    `json:"country"`
-	KickOff      time.Time `json:"kick_off"`
+type FootballMatch struct {
+	ID          uuid.UUID     `json:"id"`
+	HomeTeam    *FootballTeam `json:"home_team"`
+	AwayTeam    *FootballTeam `json:"away_team"`
+	Stadium     string        `json:"stadium"`
+	Round       int           `json:"round"`
+	Competition string        `json:"competition"`
+	Country     string        `json:"country"`
+	KickOff     time.Time     `json:"kick_off"`
 }
 
 type FootballTeam struct {
@@ -28,7 +26,7 @@ type FootballTeam struct {
 	Stadium string    `json:"stadium"`
 }
 
-func NewMatch() *Match {
+func NewFootballMatch() *FootballMatch {
 	competition := getRandomElement(footballLeagues)
 
 	teams := teamsByLeague[competition]
@@ -40,17 +38,15 @@ func NewMatch() *Match {
 		awayTeam = getRandomElement(teams)
 	}
 
-	return &Match{
-		ID:           uuid.New(),
-		HomeTeamID:   homeTeam.ID,
-		AwayTeamID:   awayTeam.ID,
-		HomeTeamName: homeTeam.Name,
-		AwayTeamName: awayTeam.Name,
-		Stadium:      homeTeam.Stadium,
-		Round:        getRandomRoundNumber(len(teams)),
-		Competition:  competition,
-		Country:      countryByLeague[competition],
-		KickOff:      faker.Time().Forward(7 * 24 * time.Hour),
+	return &FootballMatch{
+		ID:          uuid.New(),
+		HomeTeam:    homeTeam,
+		AwayTeam:    awayTeam,
+		Stadium:     homeTeam.Stadium,
+		Round:       getRandomRoundNumber(len(teams)),
+		Competition: competition,
+		Country:     countryByLeague[competition],
+		KickOff:     faker.Time().Forward(7 * 24 * time.Hour),
 	}
 }
 
