@@ -37,7 +37,7 @@ func main() {
 		switch ev := e.(type) {
 		case *kafka.Message:
 			// application-specific processing
-			fmt.Printf("Consumed event from topic %s: key = %-10s value = %s\n",
+			fmt.Printf("Consumed event from topic %s: key = %-10s value = %s\n\n",
 				*ev.TopicPartition.Topic, string(ev.Key), "see below")
 
 			newFootBallMatch := new(sports.Match)
@@ -47,13 +47,13 @@ func main() {
 			}
 
 			fmt.Printf("Match ID: %s\n", newFootBallMatch.ID)
-			fmt.Printf("Home Team: %s\n", newFootBallMatch.HomeTeam)
-			fmt.Printf("Away Team: %s\n", newFootBallMatch.AwayTeam)
+			fmt.Printf("Home Team: %s\n", newFootBallMatch.HomeTeamName)
+			fmt.Printf("Away Team: %s\n", newFootBallMatch.AwayTeamName)
 			fmt.Printf("Stadium: %s\n", newFootBallMatch.Stadium)
-			fmt.Printf("Round: %s\n", newFootBallMatch.Round)
+			fmt.Printf("Round: %d\n", newFootBallMatch.Round)
 			fmt.Printf("Competition: %s\n", newFootBallMatch.Competition)
+			fmt.Printf("Country: %s\n", newFootBallMatch.Country)
 			fmt.Printf("Kick Off: %s\n", newFootBallMatch.KickOff)
-			fmt.Printf("Note: %s\n", newFootBallMatch.Note)
 			fmt.Println()
 		case kafka.Error:
 			_, _ = fmt.Fprintf(os.Stderr, "%% Error: %v\n", ev)
