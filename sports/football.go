@@ -32,6 +32,19 @@ type FootballTeam struct {
 	Stadium string    `json:"stadium"`
 }
 
+type FootballMatchElasticSearchDocument struct {
+	ID           string `json:"id"`
+	HomeTeamName string `json:"home_team_name"`
+	AwayTeamName string `json:"away_team_name"`
+	HomeTeamID   string `json:"home_team_id"`
+	AwayTeamID   string `json:"away_team_id"`
+	Stadium      string `json:"stadium"`
+	Round        int    `json:"round"`
+	Competition  string `json:"competition"`
+	Country      string `json:"country"`
+	KickOff      int64  `json:"kick_off"`
+}
+
 func (fm *FootballMatch) ToDynamoDBItem() map[string]types.AttributeValue {
 	return map[string]types.AttributeValue{
 		"id":             &types.AttributeValueMemberS{Value: fm.ID.String()},
@@ -44,6 +57,21 @@ func (fm *FootballMatch) ToDynamoDBItem() map[string]types.AttributeValue {
 		"round":          &types.AttributeValueMemberN{Value: strconv.Itoa(fm.Round)},
 		"competition":    &types.AttributeValueMemberS{Value: fm.Competition},
 		"country":        &types.AttributeValueMemberS{Value: fm.Country},
+	}
+}
+
+func (fm *FootballMatch) ToElasticSearchDocument() *FootballMatchElasticSearchDocument {
+	return &FootballMatchElasticSearchDocument{
+		ID:           fm.ID.String(),
+		HomeTeamName: fm.HomeTeam.Name,
+		AwayTeamName: fm.AwayTeam.Name,
+		HomeTeamID:   fm.HomeTeam.ID.String(),
+		AwayTeamID:   fm.AwayTeam.ID.String(),
+		Stadium:      fm.Stadium,
+		Round:        fm.Round,
+		Competition:  fm.Competition,
+		Country:      fm.Country,
+		KickOff:      fm.KickOff.Unix(),
 	}
 }
 

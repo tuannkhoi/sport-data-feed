@@ -7,12 +7,14 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	KafkaConfigMap *kafka.ConfigMap
-	AWSConfig      *aws.Config
+	KafkaConfigMap      *kafka.ConfigMap
+	AWSConfig           *aws.Config
+	ElasticsearchConfig *elasticsearch.Config
 }
 
 func init() {
@@ -27,8 +29,9 @@ func init() {
 
 func NewConfig() *Config {
 	return &Config{
-		KafkaConfigMap: readKafkaConfig(),
-		AWSConfig:      readAWSConfig(),
+		KafkaConfigMap:      readKafkaConfig(),
+		AWSConfig:           readAWSConfig(),
+		ElasticsearchConfig: readElasticsearchConfig(),
 	}
 }
 
@@ -65,5 +68,12 @@ func readAWSConfig() *aws.Config {
 				SecretAccessKey: viper.GetString("aws.secret_access_key"),
 			}, nil
 		}),
+	}
+}
+
+func readElasticsearchConfig() *elasticsearch.Config {
+	return &elasticsearch.Config{
+		CloudID: viper.GetString("elasticsearch.cloud_id"),
+		APIKey:  viper.GetString("elasticsearch.api_key"),
 	}
 }

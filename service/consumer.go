@@ -15,15 +15,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/elastic/go-elasticsearch/v8"
 
 	"github.com/tuannkhoi/sport-data-feed/config"
 	"github.com/tuannkhoi/sport-data-feed/sports"
 )
 
 type SportDataConsumer struct {
-	Consumer       *kafka.Consumer
-	Log            *slog.Logger
-	DynamoDBClient *dynamodb.Client
+	Consumer            *kafka.Consumer
+	Log                 *slog.Logger
+	DynamoDBClient      *dynamodb.Client
+	ElasticsearchClient *elasticsearch.TypedClient
 }
 
 // NewSportDataConsumer creates a new SportDataConsumer instance.
@@ -31,6 +33,7 @@ func NewSportDataConsumer(
 	cfg *config.Config,
 	logger *slog.Logger,
 	dynamoDBClient *dynamodb.Client,
+	elasticsearchClient *elasticsearch.TypedClient,
 ) (*SportDataConsumer, error) {
 	consumer, err := kafka.NewConsumer(cfg.KafkaConfigMap)
 	if err != nil {
@@ -38,9 +41,10 @@ func NewSportDataConsumer(
 	}
 
 	return &SportDataConsumer{
-		Consumer:       consumer,
-		Log:            logger,
-		DynamoDBClient: dynamoDBClient,
+		Consumer:            consumer,
+		Log:                 logger,
+		DynamoDBClient:      dynamoDBClient,
+		ElasticsearchClient: elasticsearchClient,
 	}, nil
 }
 
@@ -119,6 +123,16 @@ func (sdc *SportDataConsumer) HandleNewFootballMatch(fm *sports.FootballMatch) e
 	}
 
 	sdc.Log.Info(fmt.Sprintf("Successfully added new football match to DynamoDB: %s\n", fm.ID.String()))
+
+	rsp, err := sdc.ElasticsearchClient.
+		Index("football-matches").
+		Request(fm.ToElasticSearchDocument()).
+		Do(context.Background())
+	if err != nil {
+		return errors.New("Failed to index football match to Elasticsearch: " + err.Error())
+	}
+
+	sdc.Log.Info(fmt.Sprintf("Successfully indexed new football match to Elasticsearch: %s\n", rsp.Result))
 
 	return nil
 }

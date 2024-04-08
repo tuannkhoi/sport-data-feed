@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/elastic/go-elasticsearch/v8"
 
 	"github.com/tuannkhoi/sport-data-feed/config"
 	"github.com/tuannkhoi/sport-data-feed/service"
@@ -20,7 +21,9 @@ func main() {
 
 	dynamoDBClient := dynamodb.NewFromConfig(*cfg.AWSConfig)
 
-	sdc, err := service.NewSportDataConsumer(cfg, logger, dynamoDBClient)
+	esClient, err := elasticsearch.NewTypedClient(*cfg.ElasticsearchConfig)
+
+	sdc, err := service.NewSportDataConsumer(cfg, logger, dynamoDBClient, esClient)
 	if err != nil {
 		logger.Error("Failed to create SportDataConsumer: ", err)
 
