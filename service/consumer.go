@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
 	"github.com/tuannkhoi/sport-data-feed/config"
@@ -18,20 +21,26 @@ import (
 )
 
 type SportDataConsumer struct {
-	Consumer *kafka.Consumer
-	Log      *slog.Logger
+	Consumer       *kafka.Consumer
+	Log            *slog.Logger
+	DynamoDBClient *dynamodb.Client
 }
 
 // NewSportDataConsumer creates a new SportDataConsumer instance.
-func NewSportDataConsumer(cfg *config.Config, logger *slog.Logger) (*SportDataConsumer, error) {
+func NewSportDataConsumer(
+	cfg *config.Config,
+	logger *slog.Logger,
+	dynamoDBClient *dynamodb.Client,
+) (*SportDataConsumer, error) {
 	consumer, err := kafka.NewConsumer(cfg.KafkaConfigMap)
 	if err != nil {
 		return nil, errors.New("Failed to create Consumer: " + err.Error())
 	}
 
 	return &SportDataConsumer{
-		Consumer: consumer,
-		Log:      logger,
+		Consumer:       consumer,
+		Log:            logger,
+		DynamoDBClient: dynamoDBClient,
 	}, nil
 }
 
@@ -97,8 +106,19 @@ func (sdc *SportDataConsumer) HandleNewFootballMatch(fm *sports.FootballMatch) e
 	fmt.Printf("Round: %d\n", fm.Round)
 	fmt.Printf("Competition: %s\n", fm.Competition)
 	fmt.Printf("Country: %s\n", fm.Country)
-	fmt.Printf("Kick Off: %s\n", fm.KickOff)
+	fmt.Printf("Kick Off: %s\n", fm.KickOff.String())
+
 	fmt.Println()
+
+	// add it to a batch, regularly flush the batch to DynamoDB
+	if _, err := sdc.DynamoDBClient.PutItem(context.TODO(), &dynamodb.PutItemInput{
+		TableName: aws.String("FootballMatches"),
+		Item:      fm.ToDynamoDBItem(),
+	}); err != nil {
+		return errors.New("Failed to put item to DynamoDB: " + err.Error())
+	}
+
+	sdc.Log.Info(fmt.Sprintf("Successfully added new football match to DynamoDB: %s\n", fm.ID.String()))
 
 	return nil
 }

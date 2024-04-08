@@ -2,8 +2,10 @@ package sports
 
 import (
 	"math/rand"
+	"strconv"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/google/uuid"
 	"golang.org/x/exp/maps"
 	"syreclabs.com/go/faker"
@@ -28,6 +30,21 @@ type FootballTeam struct {
 	ID      uuid.UUID `json:"id"`
 	Name    string    `json:"name"`
 	Stadium string    `json:"stadium"`
+}
+
+func (fm *FootballMatch) ToDynamoDBItem() map[string]types.AttributeValue {
+	return map[string]types.AttributeValue{
+		"id":             &types.AttributeValueMemberS{Value: fm.ID.String()},
+		"kick_off":       &types.AttributeValueMemberN{Value: strconv.FormatInt(fm.KickOff.Unix(), 10)},
+		"home_team_id":   &types.AttributeValueMemberS{Value: fm.HomeTeam.ID.String()},
+		"away_team_id":   &types.AttributeValueMemberS{Value: fm.AwayTeam.ID.String()},
+		"home_team_name": &types.AttributeValueMemberS{Value: fm.HomeTeam.Name},
+		"away_team_name": &types.AttributeValueMemberS{Value: fm.AwayTeam.Name},
+		"stadium":        &types.AttributeValueMemberS{Value: fm.Stadium},
+		"round":          &types.AttributeValueMemberN{Value: strconv.Itoa(fm.Round)},
+		"competition":    &types.AttributeValueMemberS{Value: fm.Competition},
+		"country":        &types.AttributeValueMemberS{Value: fm.Country},
+	}
 }
 
 func NewFootballMatch() *FootballMatch {
