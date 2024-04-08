@@ -9,6 +9,10 @@ import (
 	"syreclabs.com/go/faker"
 )
 
+const (
+	TopicNewFootballMatch = "football-match-new"
+)
+
 type FootballMatch struct {
 	ID          uuid.UUID     `json:"id"`
 	HomeTeam    *FootballTeam `json:"home_team"`

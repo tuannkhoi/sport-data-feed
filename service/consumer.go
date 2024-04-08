@@ -13,8 +13,8 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
+	"github.com/tuannkhoi/sport-data-feed/config"
 	"github.com/tuannkhoi/sport-data-feed/sports"
-	"github.com/tuannkhoi/sport-data-feed/utils"
 )
 
 type SportDataConsumer struct {
@@ -23,12 +23,8 @@ type SportDataConsumer struct {
 }
 
 // NewSportDataConsumer creates a new SportDataConsumer instance.
-func NewSportDataConsumer(logger *slog.Logger) (*SportDataConsumer, error) {
-	conf := utils.ReadConfig()
-	conf["group.id"] = "go-group-1"
-	conf["auto.offset.reset"] = "earliest"
-
-	consumer, err := kafka.NewConsumer(&conf)
+func NewSportDataConsumer(cfg *config.Config, logger *slog.Logger) (*SportDataConsumer, error) {
+	consumer, err := kafka.NewConsumer(cfg.KafkaConfigMap)
 	if err != nil {
 		return nil, errors.New("Failed to create Consumer: " + err.Error())
 	}
@@ -40,7 +36,7 @@ func NewSportDataConsumer(logger *slog.Logger) (*SportDataConsumer, error) {
 }
 
 func (sdc *SportDataConsumer) Consume() {
-	if err := sdc.Consumer.SubscribeTopics([]string{"football-match-new"}, nil); err != nil {
+	if err := sdc.Consumer.SubscribeTopics([]string{sports.TopicNewFootballMatch}, nil); err != nil {
 		log.Fatalf("Failed to subscribe to topic: %s\n", err)
 	}
 
@@ -73,21 +69,36 @@ consumeLoop:
 			fmt.Printf("Consumed event from topic %s: key = %-10s value = %s\n\n",
 				*msg.TopicPartition.Topic, string(msg.Key), "see below")
 
-			newFootBallMatch := new(sports.FootballMatch)
+			switch *msg.TopicPartition.Topic {
+			case sports.TopicNewFootballMatch:
+				fm := new(sports.FootballMatch)
 
-			if err := json.Unmarshal(msg.Value, newFootBallMatch); err != nil {
-				log.Fatalln(err)
+				if err := json.Unmarshal(msg.Value, fm); err != nil {
+					sdc.Log.Error("Failed to unmarshal football match: " + err.Error())
+
+					continue
+				}
+
+				fmt.Println(msg)
+
+				if err := sdc.HandleNewFootballMatch(fm); err != nil {
+					sdc.Log.Error("Failed to handle new football match: " + err.Error())
+				}
 			}
-
-			fmt.Printf("FootballMatch ID: %s\n", newFootBallMatch.ID)
-			fmt.Printf("Home Team: %s\n", newFootBallMatch.HomeTeam.Name)
-			fmt.Printf("Away Team: %s\n", newFootBallMatch.AwayTeam.Name)
-			fmt.Printf("Stadium: %s\n", newFootBallMatch.Stadium)
-			fmt.Printf("Round: %d\n", newFootBallMatch.Round)
-			fmt.Printf("Competition: %s\n", newFootBallMatch.Competition)
-			fmt.Printf("Country: %s\n", newFootBallMatch.Country)
-			fmt.Printf("Kick Off: %s\n", newFootBallMatch.KickOff)
-			fmt.Println()
 		}
 	}
+}
+
+func (sdc *SportDataConsumer) HandleNewFootballMatch(fm *sports.FootballMatch) error {
+	fmt.Printf("FootballMatch ID: %s\n", fm.ID)
+	fmt.Printf("Home Team: %s\n", fm.HomeTeam.Name)
+	fmt.Printf("Away Team: %s\n", fm.AwayTeam.Name)
+	fmt.Printf("Stadium: %s\n", fm.Stadium)
+	fmt.Printf("Round: %d\n", fm.Round)
+	fmt.Printf("Competition: %s\n", fm.Competition)
+	fmt.Printf("Country: %s\n", fm.Country)
+	fmt.Printf("Kick Off: %s\n", fm.KickOff)
+	fmt.Println()
+
+	return nil
 }

@@ -24,3 +24,5 @@ go.work
 client.properties
 
 out
+
+deploy/config.toml

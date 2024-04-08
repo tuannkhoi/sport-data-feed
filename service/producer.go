@@ -11,8 +11,8 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 
+	"github.com/tuannkhoi/sport-data-feed/config"
 	"github.com/tuannkhoi/sport-data-feed/sports"
-	"github.com/tuannkhoi/sport-data-feed/utils"
 )
 
 type SportDataProducer struct {
@@ -21,10 +21,8 @@ type SportDataProducer struct {
 }
 
 // NewSportDataProducer creates a new SportDataProducer instance.
-func NewSportDataProducer(logger *slog.Logger) (*SportDataProducer, error) {
-	conf := utils.ReadConfig()
-
-	producer, err := kafka.NewProducer(&conf)
+func NewSportDataProducer(cfg *config.Config, logger *slog.Logger) (*SportDataProducer, error) {
+	producer, err := kafka.NewProducer(cfg.KafkaConfigMap)
 	if err != nil {
 		return nil, errors.New("Failed to create Producer: " + err.Error())
 	}
@@ -37,7 +35,7 @@ func NewSportDataProducer(logger *slog.Logger) (*SportDataProducer, error) {
 
 // ProduceNewFootballMatch produces a new football match every 3 seconds.
 func (sdp *SportDataProducer) ProduceNewFootballMatch() {
-	topic := "football-match-new"
+	topic := sports.TopicNewFootballMatch
 
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()

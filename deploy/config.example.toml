@@ -1,0 +1,14 @@
+[kafka]
+bootstrap.servers = "BYO bootstrap.servers"
+security.protocol = "SASL_SSL"
+session.timeout.ms = 45000
+
+[kafka.sasl]
+mechanism = "PLAIN"
+username = "BYO username"
+password = "BYO password"
+
+[aws]
+region = "ap-southeast-2" # Sydney
+access_key_id = "BYO access_key_id"
+secret_access_key = "BYO secret_access_key"
